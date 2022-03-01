@@ -20,18 +20,18 @@
 import sqlalchemy
 import sqlalchemy.pool
 
-import alembic
-import alembic.util
-import alembic.config
-import alembic.script
-import alembic.migration
-import alembic.runtime.environment
+import alembic  # pylint: disable=E0401
+import alembic.util  # pylint: disable=E0401
+import alembic.config  # pylint: disable=E0401
+import alembic.script  # pylint: disable=E0401
+import alembic.migration  # pylint: disable=E0401
+import alembic.runtime.environment  # pylint: disable=E0401
 
 from pylon.core.tools import log  # pylint: disable=E0611,E0401
 
 
-def run_db_migrations(
-        module, db_url,
+def run_db_migrations(  # pylint: disable=R0913
+        module, db_url, payload=None,
         migrations_path=None, version_table=None,
         revision="head",
     ):
@@ -55,7 +55,7 @@ def run_db_migrations(
     #
     with alembic.runtime.environment.EnvironmentContext(
         config, script,
-        fn=lambda rev, context: script._upgrade_revs(revision, rev),
+        fn=lambda rev, context: script._upgrade_revs(revision, rev),  # pylint: disable=W0212
     ) as alembic_context:
         engine = sqlalchemy.create_engine(
             db_url,
@@ -68,7 +68,7 @@ def run_db_migrations(
                 version_table=version_table,
             )
             with alembic_context.begin_transaction():
-                alembic_context.run_migrations(module=module)
+                alembic_context.run_migrations(module=module, payload=payload)
 
 
 def get_db_revision(module, db_url, version_table=None):
