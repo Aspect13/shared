@@ -33,15 +33,15 @@ def within_bounds(data, bound):
     return all(x <= bound for x in data)
 
 
-def get_aggregated_data(aggregation, values):
-    totals = [d.total for d in values]
-    if aggregation == "max":
-        return max(totals)
-    elif aggregation == "min":
-        return min(totals)
-    elif aggregation == "avg":
-        return sum(totals) / len(totals)
-
-
-def closest(lst, val):
-    return lst[min(range(len(lst)), key=lambda i: abs(lst[i].total - val))]
+# def get_aggregated_data(aggregation, values):
+#     totals = [d.total for d in values]
+#     if aggregation == "max":
+#         return max(totals)
+#     elif aggregation == "min":
+#         return min(totals)
+#     elif aggregation == "avg":
+#         return sum(totals) / len(totals)
+#
+#
+# def closest(lst, val):
+#     return lst[min(range(len(lst)), key=lambda i: abs(lst[i].total - val))]

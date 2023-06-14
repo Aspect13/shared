@@ -1,15 +1,15 @@
-from typing import Optional, Any, List, get_origin
+from typing import Optional, Any, List, get_origin, ForwardRef
 from pydantic import BaseModel, validator, AnyUrl, parse_obj_as
 
 
 class TestParameter(BaseModel):
     class Config:
         anystr_strip_whitespace = True
-        anystr_lower = True
 
     __type_mapping = {
         'url': AnyUrl,
         'urls': List[AnyUrl],
+        'list[url]': List[AnyUrl],
         'string': str,
         'number': int,
         'list': list,
@@ -33,13 +33,6 @@ class TestParameter(BaseModel):
             return cls.__type_mapping.get(type_)
         return str
 
-    # @validator('type')
-    # def validate_type(cls, value, values):
-    #     return cls.get_real_type(
-    #         value,
-    #         values.get('name')
-    #     )
-
     @validator('default')
     def convert_default_type(cls, value, values):
         real_type = cls.get_real_type(
@@ -56,7 +49,46 @@ class TestParameter(BaseModel):
             if isinstance(value, str):
                 value = value.strip()
             if not isinstance(value, list) and _checked_type is list:
-                value = [i.strip() for i in str(value).split(list_delimiter)]
+                value = [i.strip() for i in str(value).split(list_delimiter) if i]
             elif isinstance(value, list) and _checked_type is not list:
                 value = list_delimiter.join(value)
         return value
+
+    @validator('default')
+    def validate_required(cls, value, values):
+        if values.get('name') in cls._required_params:
+            assert value and value != [''], f'{values["name"]} is required'
+        return value
+
+
+class TestParamsBase(BaseModel):
+    """
+    Base case class.
+    Used as a parent class for actual test model
+    """
+    _required_params = set()
+    test_parameters: List[TestParameter]
+
+    @classmethod
+    def from_orm(cls, db_obj):
+        instance = cls(
+            test_parameters=db_obj.test_parameters,
+        )
+        return instance
+
+    def update(self, other: ForwardRef('TestParamsBase')) -> None:
+        test_params_names = set(map(lambda tp: tp.name, other.test_parameters))
+        modified_params = other.test_parameters
+        for tp in self.test_parameters:
+            if tp.name not in test_params_names:
+                modified_params.append(tp)
+        self.test_parameters = modified_params
+
+    @validator('test_parameters')
+    def required_test_param(cls, value):
+        lacking_values = cls._required_params.difference(set(i.name for i in value))
+        assert not lacking_values, f'The following parameters are required: {", ".join(lacking_values)}'
+        return value
+
+
+# TestParamsBase.update_forward_refs()
